@@ -317,7 +317,7 @@ def initialize_model(model_name, num_classes,feature_extract=False,
                                 pretrained = use_pretrained,
                                 num_classes=0)
     
-    in_channels = 2  # Set to 2 for your needs
+    in_channels = 1  # Set to 1 because we are only using magnitude
     # pdb.set_trace()
     # Check if the first layer is Conv2d
     # if isinstance(model_ft.features[0], nn.Conv2d):

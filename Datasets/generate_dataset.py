@@ -14,11 +14,11 @@ import pdb
 import mstar
 
 flags.DEFINE_string('image_root', default='Datasets', help='')
-flags.DEFINE_string('dataset', default='eoc-1-t72-a64', help='')
+flags.DEFINE_string('dataset', default='soc', help='')
 flags.DEFINE_boolean('is_train', default=False, help='')
 flags.DEFINE_integer('chip_size', default=100, help='')
 flags.DEFINE_integer('patch_size', default=94, help='')
-flags.DEFINE_boolean('use_phase', default=True, help='')
+flags.DEFINE_boolean('use_phase', default=False, help='')
 
 FLAGS = flags.FLAGS
 
