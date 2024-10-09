@@ -103,7 +103,7 @@ def get_transform(Network_parameters, input_size=224):
         # changed crop and values to match original source code and removed padding
         data_transforms = {
         'train': transforms.Compose([
-            preprocess.CenterCrop(88),
+            #preprocess.CenterCrop(88),
             preprocess.RandomCrop(88), transforms.ToTensor(), 
             #nn.ZeroPad2d(56),
         ]),
