@@ -40,7 +40,7 @@ def main(Params):
     print('Starting Experiments...')
     print('Baseline (softmax) results')
     
-    Baseline(Params)
+    # Baseline(Params)
     print('Baseline (softmax) results finished')
     
     for regularization_method in Params['regularization_method']:
@@ -228,7 +228,7 @@ def parse_args():
                         help=' Set weights for objective term: value(s) should be between 0 and 1. (default: [.25, .5, .75, 1]')
     parser.add_argument('--embed_dim', type=list, default=[None],
                         help=' Embedding dimension of encoder. (default: [3], will also run full dimension size)')
-    parser.add_argument('--regularization_method', type=list, default=['cosface','sphereface','LACE','arcface','center','AMC'], 
+    parser.add_argument('--regularization_method', type=list, default=['LACE'], 
                         help='Feature regularization approach to use (default: all methods)')
     parser.add_argument('--train_batch_size', type=int, default=16,
                         help='input batch size for training (default: 128)')
