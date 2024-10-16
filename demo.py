@@ -220,8 +220,8 @@ def parse_args():
                         help='Location to save models')
     parser.add_argument('--data_selection', type=int, default=1,       ## argument to change the dataset
                         help='Dataset selection:  1: FashionMNIST, 2:SVHN, 3:CIFAR10, 4:CIFAR100,5:CIFAR100_Coarse')
-    parser.add_argument('--feature_extraction', type=bool, default=True,
-                        help='Flag for feature extraction. False, train whole model. True, only update fully connected/encoder parameters (default: True)')
+    parser.add_argument('--feature_extraction', action=argparse.BooleanOptionalAction, default=False,
+                        help='Flag for feature extraction. no-feature_extraction, train whole model. feature_extraction, only update fully connected/encoder parameters (default: True)')
     parser.add_argument('--use_pretrained', type=bool, default=True,
                         help='Flag to use pretrained model from ImageNet or train from scratch (default: True)')
     parser.add_argument('--weights', type=list, default=[1],
