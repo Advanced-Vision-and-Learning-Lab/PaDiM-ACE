@@ -100,15 +100,16 @@ def get_transform(Network_parameters, input_size=224):
     #MSTAR is numpy arrays so custom center and random crop transforms are used in preprocessing
         mean = [0]
         std = [1]
+        # changed crop and values to match original source code and removed padding
         data_transforms = {
         'train': transforms.Compose([
             #preprocess.CenterCrop(88),
             preprocess.RandomCrop(88), transforms.ToTensor(), 
-            #nn.ZeroPad2d(56),
+            nn.ZeroPad2d(68),
         ]),
         'test': transforms.Compose([
             preprocess.CenterCrop(88), transforms.ToTensor(), 
-            #nn.ZeroPad2d(48),
+            nn.ZeroPad2d(68),
         ]),
     }
         

@@ -91,7 +91,11 @@ def train_model(model, dataloaders, criterion, optimizer, device,
                         
                         # Get model outputs and calculate loss
                         outputs, embedding, loss_embedding = model(inputs,labels.long())
+<<<<<<< HEAD
 
+=======
+                        pdb.set_trace()
+>>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
                         #Backward produces 2 losses
                         loss_class = criterion(outputs, labels.long()).mean()
                         loss_embedding = loss_embedding.mean()
@@ -321,16 +325,32 @@ def initialize_model(model_name, num_classes,feature_extract=False,
     #Returned feature vector from network without classifier
     model_ft = timm.create_model(model_name = model_name, 
                                 pretrained = use_pretrained,
+<<<<<<< HEAD
                                 num_classes=0, 
                                 in_chans=in_channels)  
 
     #If feature extraction only, freeze backbone and only train output layer
+=======
+                                num_classes=0)
+    
+    in_channels = 1  # Set to 1 because we are only using magnitude
+
+    # change input channel to 1 instead of 3 when using magnitude only
+    # model_ft.stem[0] = nn.Conv2d(in_channels, 96, kernel_size=(4,4),stride=(4,4))
+
+    #If feature extraction only, freeze backbone and only train output layer
+    # if feature_extract:
+>>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
     num_params = sum(p.numel() for p in model_ft.parameters() if p.requires_grad)
     print("Number of parameters before feature extraction: %d" % (num_params)) 
     set_parameter_requires_grad(model_ft,feature_extract)
     num_params = sum(p.numel() for p in model_ft.parameters() if p.requires_grad)
     print("Number of parameters after feature extraction: %d" % (num_params))
+<<<<<<< HEAD
 
+=======
+    pdb.set_trace()
+>>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
     num_ftrs = model_ft.num_features
     input_size = 224
 

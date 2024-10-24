@@ -53,6 +53,7 @@ def save_results(train_dict, test_dict, split, Network_parameters, num_params,
     embeds, labels = get_embeds(model_ft, train_dict, 
                                     dataloaders['train_full'],device=device)
     for phase in ['train','val']:
+<<<<<<< HEAD
         pass
         # plot(embeds, labels, dataloaders['TSNE'][phase],
             # fig_path=filename + '{}_{}_embedding.png'.format(phase,regulation_method))
@@ -61,6 +62,15 @@ def save_results(train_dict, test_dict, split, Network_parameters, num_params,
     embeds, labels = get_embeds(model_ft, train_dict, dataloaders['test'],device=device)
     # plot(embeds, labels, dataloaders['TSNE']['test'],
       # fig_path=filename + '{}_{}_embedding.png'.format('test',regulation_method))
+=======
+        plot(embeds, labels, dataloaders['TSNE'][phase],
+             fig_path=filename + '{}_{}_embedding.png'.format(phase,regulation_method))
+        
+    #Test data visualization
+    embeds, labels = get_embeds(model_ft, train_dict, dataloaders['test'],device=device)
+    plot(embeds, labels, dataloaders['TSNE']['test'],
+     fig_path=filename + '{}_{}_embedding.png'.format('test',regulation_method))
+>>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
     
     #Remove model from training dictionary
     train_dict.pop('best_model_wts')
