@@ -34,26 +34,29 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
     # Just normalization and resize for test
     # Data transformations as described in:
     # http://openaccess.thecvf.com/content_cvpr_2018/papers/Xue_Deep_Texture_Manifold_CVPR_2018_paper.pdf
-    # data_transforms = {
-    #     'train': transforms.Compose([
-    #         transforms.Resize(Network_parameters['resize_size']),
-    #         transforms.RandomResizedCrop(input_size,scale=(.8,1.0)),
-    #         transforms.RandomHorizontalFlip(),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    #     ]),
-    #     'test': transforms.Compose([
-    #         transforms.Resize(Network_parameters['center_size']),
-    #         transforms.CenterCrop(input_size),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    #     ]),
-    # }
+    if Dataset == "MSTAR":
+        global data_transforms
+        data_transforms, mean, std = get_transform(Network_parameters, input_size=input_size)
+        Network_parameters['mean'] = mean
+        Network_parameters['std'] = std
+    else:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize(Network_parameters['resize_size']),
+                transforms.RandomResizedCrop(input_size,scale=(.8,1.0)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+            'test': transforms.Compose([
+                transforms.Resize(Network_parameters['center_size']),
+                transforms.CenterCrop(input_size),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                 ]),
+        }
     
-    global data_transforms
-    data_transforms, mean, std = get_transform(Network_parameters, input_size=input_size)
-    Network_parameters['mean'] = mean
-    Network_parameters['std'] = std
+    
  
     if Dataset == 'FashionMNIST': #See people also use .5, .5 for normalization
         data_transforms = {
@@ -124,7 +127,7 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         
         # test_dataset = MSTAR_Index(data_dir,train=False,transform=data_transforms['test'],
         #                                download=True)
-        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='eoc-1-t72-a64', is_train=True,
+        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='soc', is_train=True,
         transform=data_transforms['test'])
         
         X = np.arange(0,len(train_dataset))
@@ -133,14 +136,14 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         #Set random state to keep the data the same order for each model
         X_train, X_val, y_train, y_val, train_indices, val_indices = train_test_split(X,y,indices,test_size=.1,stratify=y,
                                                           random_state=42)
-        
-        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
+        #pdb.set_trace()
+        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='soc', is_train=True,
         transform=data_transforms['train']),X_train)
-        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
+        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='soc', is_train=True,
         transform=data_transforms['test']),X_val)
-        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=False,
+        test_dataset = loader.MSTAR_Dataset(data_dir, name='soc', is_train=False,
         transform=data_transforms['test'])
-        
+        #pdb.set_trace()
     elif Dataset == 'CIFAR10': #See people also use .5, .5 for normalization
         train_dataset = CIFAR10_Index(data_dir,train=True,transform=data_transforms['train'],
                                        download=True)
@@ -231,13 +234,14 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
     dataset_indices = {'train': train_indices, 'val': val_indices, 
                        'test': np.arange(len(image_datasets['test']))}
     phase_count = 0
+    
     for phase in ['train', 'val','test']:
         indices = np.arange(len(dataloaders_dict[phase].sampler))
         # mstar test is loaded differently (change this to if mstar)
-        if phase == 'test':
-            y = np.array(image_datasets[phase].targets)[dataset_indices[phase]]
-        else:
+        if phase != 'test' and Dataset == 'MSTAR':
             y = np.array(image_datasets[phase].dataset.targets)[dataset_indices[phase]]
+        else:
+            y = np.array(image_datasets[phase].targets)[dataset_indices[phase]]
         #Use stratified split to balance training validation splits, 
         #set random state to be same for each encoding method
         try:

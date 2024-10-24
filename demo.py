@@ -15,6 +15,7 @@ from Demo_Parameters import Parameters
 from Utils.Save_Results import save_results
 from Prepare_Data import Prepare_DataLoaders
 from Utils.Network_functions import initialize_model, train_model, test_model
+from Utils.Generate_Learning_Curves import Plot_Learning_Curves
 
 #Turn off plotting
 plt.ioff()
@@ -40,7 +41,7 @@ def main(Params):
     print('Starting Experiments...')
     print('Baseline (softmax) results')
     
-    Baseline(Params)
+    #Baseline(Params)
     print('Baseline (softmax) results finished')
     
     for regularization_method in Params['regularization_method']:
@@ -56,15 +57,15 @@ def main(Params):
                     torch.cuda.manual_seed_all(split)
                     torch.manual_seed(split)
                             
-        
                     # Initialize the histogram model for this run
                     model_ft, input_size = initialize_model(model_name, num_classes,
                                                             feature_extract=Params['feature_extraction'],
                                                             use_pretrained=Params['use_pretrained'],
                                                             embed_dim=current_dim,
                                                             loss=regularization_method,
-                                                            weight=current_weight)
-        
+                                                            weight=current_weight,
+                                                            dataset=Params['Dataset'])
+                    
                     # Send the model to GPU if available, use multiple if available
                     if torch.cuda.device_count() > 1:
                         print("Using", torch.cuda.device_count(), "GPUs!")
@@ -88,13 +89,22 @@ def main(Params):
                     criterion = nn.CrossEntropyLoss()
                    
                     scheduler = None
-        
+
                     # Train and evaluate
                     train_dict = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, device,
                                               num_epochs=Params['num_epochs'],
                                               scheduler=scheduler,
                                               weight=current_weight,
                                               loss_type=regularization_method)
+                    Plot_Learning_Curves(train_acc=train_dict['train_acc_track'],
+                                         train_loss=train_dict['train_error_track'],
+                                         val_acc=train_dict['val_acc_track'],
+                                         val_loss=train_dict['val_error_track'],
+                                         best_epoch=train_dict['best_epoch'],
+                                         sub_dir=(regularization_method+"_"+str(split)+"_"+"featureExtract_"+str(Params['feature_extraction']+"_"+
+                                                                                                                 "Pretrained_"+str(Params['use_pretrained'])+"_")),
+                                         weight=current_weight)
+                    
                     test_dict = test_model(dataloaders_dict['test'], model_ft, criterion,
                                             device, current_weight, 
                                             model_weights = train_dict['best_model_wts'])
@@ -220,15 +230,15 @@ def parse_args():
                         help='Location to save models')
     parser.add_argument('--data_selection', type=int, default=1,       ## argument to change the dataset
                         help='Dataset selection:  1: FashionMNIST, 2:SVHN, 3:CIFAR10, 4:CIFAR100,5:CIFAR100_Coarse')
-    parser.add_argument('--feature_extraction', type=bool, default=True,
-                        help='Flag for feature extraction. False, train whole model. True, only update fully connected/encoder parameters (default: True)')
+    parser.add_argument('--feature_extraction', action=argparse.BooleanOptionalAction, default=False,
+                        help='Flag for feature extraction. --no-feature_extraction (False), train whole model. --feature_extraction (True), only update fully connected/encoder parameters (default: True)')
     parser.add_argument('--use_pretrained', type=bool, default=True,
                         help='Flag to use pretrained model from ImageNet or train from scratch (default: True)')
     parser.add_argument('--weights', type=list, default=[1],
                         help=' Set weights for objective term: value(s) should be between 0 and 1. (default: [.25, .5, .75, 1]')
     parser.add_argument('--embed_dim', type=list, default=[None],
                         help=' Embedding dimension of encoder. (default: [3], will also run full dimension size)')
-    parser.add_argument('--regularization_method', type=list, default=['cosface','sphereface','LACE','arcface','center','AMC'], 
+    parser.add_argument('--regularization_method', type=list, default=['LACE'], 
                         help='Feature regularization approach to use (default: all methods)')
     parser.add_argument('--train_batch_size', type=int, default=16,
                         help='input batch size for training (default: 128)')

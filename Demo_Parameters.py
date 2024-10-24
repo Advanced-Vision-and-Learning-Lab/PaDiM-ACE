@@ -129,14 +129,14 @@ def Parameters(args):
                    'CIFAR10': 10,
                    'CIFAR100': 100,
                    'CIFAR100_Coarse': 20,
-                   'MSTAR': 4}
+                   'MSTAR': 10}
     
     #Number of runs and/or splits for each dataset
-    Splits = {'FashionMNIST': 1,
-              'SVHN': 1,
-              'CIFAR10': 1,
-              'CIFAR100': 1,
-              'CIFAR100_Coarse': 1,
+    Splits = {'FashionMNIST': 3,
+              'SVHN': 3,
+              'CIFAR10': 3,
+              'CIFAR100': 3,
+              'CIFAR100_Coarse': 3,
               'MSTAR': 3}
     
     Dataset = Dataset_names[data_selection]

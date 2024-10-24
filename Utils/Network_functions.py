@@ -91,7 +91,7 @@ def train_model(model, dataloaders, criterion, optimizer, device,
                         
                         # Get model outputs and calculate loss
                         outputs, embedding, loss_embedding = model(inputs,labels.long())
-                        
+
                         #Backward produces 2 losses
                         loss_class = criterion(outputs, labels.long()).mean()
                         loss_embedding = loss_embedding.mean()
@@ -229,9 +229,10 @@ def set_parameter_requires_grad(model, feature_extracting):
         for name, param in model.named_parameters():
                 param.requires_grad = False
     else:
-        for name, param in model.named_parameters():
-            if model.default_cfg['classifier'] not in name: 
-                param.requires_grad = False
+        pass
+        # for name, param in model.named_parameters():
+        #     if model.default_cfg['classifier'] not in name: 
+        #         param.requires_grad = False
             
      
 def test_model(dataloader,model,criterion,device,weight,model_weights=None):
@@ -305,39 +306,31 @@ def test_model(dataloader,model,criterion,device,weight,model_weights=None):
     
 def initialize_model(model_name, num_classes,feature_extract=False,
                      use_pretrained=False, embed_dim=2,loss='softmax',
-                     device='cuda',weight=1):
+                     device='cuda',weight=1, dataset='FashionMNIST'):
     
     # Initialize these variables which will be set in this if statement. Each of these
     #   variables is model specific.
     model_ft = None
     input_size = 0
+
+    if dataset == 'MSTAR':
+        in_channels = 1     # change to 2 if using magnitude and phase or keep as 1 if only using magnitude
+    else:
+        in_channels = 3
     
     #Returned feature vector from network without classifier
     model_ft = timm.create_model(model_name = model_name, 
                                 pretrained = use_pretrained,
-                                num_classes=0)
-    
-    in_channels = 2  # Set to 2 for your needs
-    # pdb.set_trace()
-    # Check if the first layer is Conv2d
-    # if isinstance(model_ft.features[0], nn.Conv2d):
-    #     # Modify the first Conv2d layer
-    #     model_ft.features[0][0] = nn.Conv2d(
-    #         in_channels=in_channels,
-    #         out_channels=model.features[0].out_channels,
-    #         kernel_size=model.features[0].kernel_size,
-    #         stride=model.features[0].stride,
-    #         padding=model.features[0].padding,
-    #         bias=model.features[0].bias
-    #     )
-
-    # change input channel to 2 instead of 3 when using convnext
-    model_ft.stem[0] = nn.Conv2d(in_channels, 96, kernel_size=(4,4),stride=(4,4))
+                                num_classes=0, 
+                                in_chans=in_channels)  
 
     #If feature extraction only, freeze backbone and only train output layer
-    if feature_extract:
-        set_parameter_requires_grad(model_ft,feature_extract)
-    
+    num_params = sum(p.numel() for p in model_ft.parameters() if p.requires_grad)
+    print("Number of parameters before feature extraction: %d" % (num_params)) 
+    set_parameter_requires_grad(model_ft,feature_extract)
+    num_params = sum(p.numel() for p in model_ft.parameters() if p.requires_grad)
+    print("Number of parameters after feature extraction: %d" % (num_params))
+
     num_ftrs = model_ft.num_features
     input_size = 224
 
@@ -391,6 +384,6 @@ def initialize_model(model_name, num_classes,feature_extract=False,
     model_ft = Embedding_model(model_ft,input_feat_size=num_ftrs,
                                embed_dim=embed_dim,loss=loss,device=device,
                                weight=weight)
-
+    
     return model_ft, input_size
 
