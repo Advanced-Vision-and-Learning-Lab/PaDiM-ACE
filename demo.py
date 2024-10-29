@@ -41,11 +41,8 @@ def main(Params):
     print('Starting Experiments...')
     print('Baseline (softmax) results')
     
-<<<<<<< HEAD
     #Baseline(Params)
-=======
     # Baseline(Params)
->>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
     print('Baseline (softmax) results finished')
     
     for regularization_method in Params['regularization_method']:
@@ -105,9 +102,7 @@ def main(Params):
                                          val_acc=train_dict['val_acc_track'],
                                          val_loss=train_dict['val_error_track'],
                                          best_epoch=train_dict['best_epoch'],
-                                         sub_dir=(regularization_method+"_"+str(split)+"_"+"featureExtract_"+str(Params['feature_extraction']+"_"+
-                                                                                                                 "Pretrained_"+str(Params['use_pretrained'])+"_")),
-                                         weight=current_weight)
+                                         sub_dir=(regularization_method+"_"+str(split)+"_"+"featureExtract_"+str(Params['feature_extraction'])+"_"+"Pretrained_"+str(Params['use_pretrained'])+"_"),weight=current_weight)
                     
                     test_dict = test_model(dataloaders_dict['test'], model_ft, criterion,
                                             device, current_weight, 
@@ -235,12 +230,8 @@ def parse_args():
     parser.add_argument('--data_selection', type=int, default=1,       ## argument to change the dataset
                         help='Dataset selection:  1: FashionMNIST, 2:SVHN, 3:CIFAR10, 4:CIFAR100,5:CIFAR100_Coarse')
     parser.add_argument('--feature_extraction', action=argparse.BooleanOptionalAction, default=False,
-<<<<<<< HEAD
                         help='Flag for feature extraction. --no-feature_extraction (False), train whole model. --feature_extraction (True), only update fully connected/encoder parameters (default: True)')
-=======
-                        help='Flag for feature extraction. no-feature_extraction, train whole model. feature_extraction, only update fully connected/encoder parameters (default: True)')
->>>>>>> 4ead2a174bf88980ac1cc92de6263f7b617a1971
-    parser.add_argument('--use_pretrained', type=bool, default=True,
+    parser.add_argument('--use_pretrained', action=argparse.BooleanOptionalAction, default=True,
                         help='Flag to use pretrained model from ImageNet or train from scratch (default: True)')
     parser.add_argument('--weights', type=list, default=[1],
                         help=' Set weights for objective term: value(s) should be between 0 and 1. (default: [.25, .5, .75, 1]')

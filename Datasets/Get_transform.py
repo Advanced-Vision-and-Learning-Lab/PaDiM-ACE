@@ -105,11 +105,11 @@ def get_transform(Network_parameters, input_size=224):
         'train': transforms.Compose([
             #preprocess.CenterCrop(88),
             preprocess.RandomCrop(88), transforms.ToTensor(), 
-            nn.ZeroPad2d(68),
+            #nn.ZeroPad2d(68),
         ]),
         'test': transforms.Compose([
             preprocess.CenterCrop(88), transforms.ToTensor(), 
-            nn.ZeroPad2d(68),
+            #nn.ZeroPad2d(68),
         ]),
     }
         
