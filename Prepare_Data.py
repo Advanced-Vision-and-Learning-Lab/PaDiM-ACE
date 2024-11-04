@@ -224,7 +224,7 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
                                                            pin_memory=Network_parameters['pin_memory'])
                                                            for x in ['train', 'val','test']}
         dataloaders_dict['train_full'] = torch.utils.data.DataLoader(train_dataset,
-                                                           batch_size=Network_parameters['batch_size']['val'],
+                                                           batch_size=Network_parameters['batch_size']['train'],
                                                            sampler=None,
                                                            num_workers=Network_parameters['num_workers'],
                                                            pin_memory=Network_parameters['pin_memory'])
