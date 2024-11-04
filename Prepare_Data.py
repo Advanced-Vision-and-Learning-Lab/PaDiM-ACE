@@ -127,7 +127,7 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         
         # test_dataset = MSTAR_Index(data_dir,train=False,transform=data_transforms['test'],
         #                                download=True)
-        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='soc', is_train=True,
+        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='eoc-1-t72-a64', is_train=True,
         transform=data_transforms['test'])
         
         X = np.arange(0,len(train_dataset))  # array [0, 1, 2, ..., 134602] indices of images
@@ -136,11 +136,11 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         #Set random state to keep the data the same order for each model
         X_train, X_val, y_train, y_val, train_indices, val_indices = train_test_split(X,y,indices,test_size=.1,stratify=y, random_state=42)
         #pdb.set_trace()
-        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='soc', is_train=True,
+        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
         transform=data_transforms['train']),X_train)
-        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='soc', is_train=True,
+        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
         transform=data_transforms['test']),X_val)
-        test_dataset = loader.MSTAR_Dataset(data_dir, name='soc', is_train=False,
+        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=False,
         transform=data_transforms['test'])
         #pdb.set_trace()
 
