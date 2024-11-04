@@ -161,7 +161,8 @@ def Baseline(Params):
                                                             use_pretrained=Params['use_pretrained'],
                                                             embed_dim=current_dim,
                                                             loss=regularization_method,
-                                                            weight=0)
+                                                            weight=0,
+                                                            dataset=Params['Dataset'])
     
     
                 # Send the model to GPU if available, use multiple if available

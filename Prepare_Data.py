@@ -133,17 +133,14 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         X = np.arange(0,len(train_dataset))  # array [0, 1, 2, ..., 134602] indices of images
         y = train_dataset.targets            # array [..., 0,6,9,8,5,0] targets for the images
         indices = np.arange(len(y))          # array same as X
+
         #Set random state to keep the data the same order for each model
         X_train, X_val, y_train, y_val, train_indices, val_indices = train_test_split(X,y,indices,test_size=.1,stratify=y, random_state=42)
-        #pdb.set_trace()
-        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
-        transform=data_transforms['train']),X_train)
-        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,
-        transform=data_transforms['test']),X_val)
-        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=False,
-        transform=data_transforms['test'])
-        #pdb.set_trace()
-
+        
+        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['train']),X_train)
+        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['test']),X_val)
+        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=False,transform=data_transforms['test'])
+       
     elif Dataset == 'CIFAR10': #See people also use .5, .5 for normalization
         train_dataset = CIFAR10_Index(data_dir,train=True,transform=data_transforms['train'],
                                        download=True)
@@ -223,8 +220,9 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
                                                            num_workers=Network_parameters['num_workers'],
                                                            pin_memory=Network_parameters['pin_memory'])
                                                            for x in ['train', 'val','test']}
-        dataloaders_dict['train_full'] = torch.utils.data.DataLoader(train_dataset,
-                                                           batch_size=Network_parameters['batch_size']['train'],
+        # only when using MSTAR
+        dataloaders_dict['train_full'] = torch.utils.data.DataLoader(loader.MSTAR_Dataset(path=data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['test']),
+                                                           batch_size=Network_parameters['batch_size']['val'],
                                                            sampler=None,
                                                            num_workers=Network_parameters['num_workers'],
                                                            pin_memory=Network_parameters['pin_memory'])
@@ -259,5 +257,5 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
     # Creating PT data samplers and loaders:
     TSNE_sampler = {'train': TSNE_indices['train'], 'val': TSNE_indices['val'],'test': TSNE_indices['test']}
     dataloaders_dict['TSNE'] = TSNE_sampler 
-    # pdb.set_trace()
+
     return dataloaders_dict
