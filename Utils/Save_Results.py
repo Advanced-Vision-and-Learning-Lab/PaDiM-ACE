@@ -53,6 +53,7 @@ def save_results(train_dict, test_dict, split, Network_parameters, num_params,
     embeds, labels = get_embeds(model_ft, train_dict, 
                                     dataloaders['train_full'],device=device)
     for phase in ['train','val']:
+        pass
         plot(embeds, labels, dataloaders['TSNE'][phase],
             fig_path=filename + '{}_{}_embedding.png'.format(phase,regulation_method))
         

@@ -41,7 +41,6 @@ def main(Params):
     print('Starting Experiments...')
     print('Baseline (softmax) results')
     
-    #Baseline(Params)
     if Params['feature_extraction'] == False and Params['use_pretrained'] == True:
         Baseline(Params)
     print('Baseline (softmax) results finished')
