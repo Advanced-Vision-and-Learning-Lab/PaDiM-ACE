@@ -44,7 +44,7 @@ def main(Params):
     #Baseline(Params)
     if Params['feature_extraction'] == False and Params['use_pretrained'] == True:
         Baseline(Params)
-        print('Baseline (softmax) results finished')
+    print('Baseline (softmax) results finished')
     
     for regularization_method in Params['regularization_method']:
         for current_dim in Params['embed_dim']:
