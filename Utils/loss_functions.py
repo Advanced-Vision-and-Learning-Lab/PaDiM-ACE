@@ -234,10 +234,11 @@ class ACELoss(nn.Module):
         # Compute U (eigenvectors) and D (eigvenvalues) 
         try:
             U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t()))
+            
         except:
             U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t())+
-                                                      (1e-7*torch.eye(self.feat_dim,
-                                                                           device=self.device)))
+                                              (1e-5*torch.eye(self.feat_dim,
+                                                              device=self.device)))
     
         #Compute D^-1/2 power
         D_mat = torch.diag_embed(torch.pow(eigenvalues, -1 / 2))
