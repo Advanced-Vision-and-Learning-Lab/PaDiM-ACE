@@ -42,7 +42,8 @@ def main(Params):
     print('Baseline (softmax) results')
     
     if Params['feature_extraction'] == False and Params['use_pretrained'] == True:
-        Baseline(Params)
+        pass
+        # Baseline(Params)
     print('Baseline (softmax) results finished')
     
     for regularization_method in Params['regularization_method']:

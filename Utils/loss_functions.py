@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
+import pdb
 
 class AngularPenaltySMLoss(nn.Module):
 
@@ -210,7 +210,9 @@ class ACELoss(nn.Module):
         
         if single_stats:
             self.b_means = nn.init.uniform_(torch.randn(1, self.feat_dim),a=-bound,b=bound)
-            self.b_covs = torch.randn(self.feat_dim, self.feat_dim)
+            # self.b_covs = torch.randn(self.feat_dim, self.feat_dim)
+            self.b_covs = torch.randn(self.feat_dim)     # vector to represent diagonal matrix
+            
         else:
             if init_means is not None:
                 self.b_means = init_means
@@ -228,32 +230,39 @@ class ACELoss(nn.Module):
             self.signatures = self.signatures.to(device)
             self.b_means = self.b_means.to(device)
             self.b_covs = self.b_covs.to(device)
-            
+        
     def forward(self,X,labels):
-     
         # Compute U (eigenvectors) and D (eigvenvalues) 
-        try:
-            U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t()))
+        # try:
+        #     U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t()))
             
-        except:
-            U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t())+
-                                              (1e-5*torch.eye(self.feat_dim,
-                                                              device=self.device)))
+        # except:
+        #     U_mat, eigenvalues, _ = torch.svd(torch.mm(self.b_covs,self.b_covs.t())+
+        #                                       (1e-5*torch.eye(self.feat_dim,
+        #                                                       device=self.device)))
     
-        #Compute D^-1/2 power
-        D_mat = torch.diag_embed(torch.pow(eigenvalues, -1 / 2))
+        # #Compute D^-1/2 power
+        # D_mat = torch.diag_embed(torch.pow(eigenvalues, -1 / 2))
 
-        #Compute matrix product DU^-1/2, should be
-        #Perform transpose operation along DxD dimension (follow paper)
-        DU = torch.matmul(D_mat, U_mat.T)
+        # #Compute matrix product DU^-1/2, should be
+        # #Perform transpose operation along DxD dimension (follow paper)
+        # DU = torch.matmul(D_mat, U_mat.T)
+        b_covs = torch.diag_embed(self.b_covs)     # project cov vector into diagonal matrix
+        b_covs_inv = torch.linalg.inv(b_covs)      # take inverse of covariance matrix
+        
        
         #Center features (subtract background mean)
         # print(self.b_covs)
-        X_centered = X-self.b_means
-        
+        X_centered = X-self.b_means                    
+
+        X_whitened = torch.matmul(X_centered, b_covs_inv)                    
+        signatures_whitened = torch.matmul(self.signatures, b_covs_inv)
+
+        xHat = X_whitened.T
+        sHat = signatures_whitened.T        
         #Compute x_hat
-        xHat = torch.matmul(DU, X_centered.T)
-        sHat = torch.matmul(DU, self.signatures.T)
+        # xHat = torch.matmul(DU, X_centered.T)
+        # sHat = torch.matmul(DU, self.signatures.T)
         
         #Compute ACE score between features and signatures (NxC, one vs all), 
         #score between of -1 and 1 
@@ -272,8 +281,8 @@ class ACELoss(nn.Module):
         denominator = torch.exp(numerator) + torch.sum(torch.exp(excl), dim=1)
         loss = (numerator - torch.log(denominator))
         loss = -torch.mean(loss)
-     
         #Thing to try, maximize correct target, minimize others (use neq)
+        pdb.set_trace()
         return loss, ACE_targets
     
 
