@@ -282,7 +282,6 @@ class ACELoss(nn.Module):
         loss = (numerator - torch.log(denominator))
         loss = -torch.mean(loss)
         #Thing to try, maximize correct target, minimize others (use neq)
-        pdb.set_trace()
         return loss, ACE_targets
     
 

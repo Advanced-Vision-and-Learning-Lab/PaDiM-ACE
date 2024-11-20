@@ -127,7 +127,7 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         
         # test_dataset = MSTAR_Index(data_dir,train=False,transform=data_transforms['test'],
         #                                download=True)
-        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='eoc-2-cv', is_train=True,
+        train_dataset = loader.MSTAR_Dataset(path=data_dir, name='eoc-1-t72-a64', is_train=True,
         transform=data_transforms['test'])
         
         X = np.arange(0,len(train_dataset))  # array [0, 1, 2, ..., 134602] indices of images
@@ -137,9 +137,9 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
         #Set random state to keep the data the same order for each model
         X_train, X_val, y_train, y_val, train_indices, val_indices = train_test_split(X,y,indices,test_size=.1,stratify=y, random_state=42)
         
-        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-2-cv', is_train=True,transform=data_transforms['train']),X_train)
-        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-2-cv', is_train=True,transform=data_transforms['test']),X_val)
-        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-2-cv', is_train=False,transform=data_transforms['test'])
+        train_dataset = torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['train']),X_train)
+        val_dataset =  torch.utils.data.Subset(loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['test']),X_val)
+        test_dataset = loader.MSTAR_Dataset(data_dir, name='eoc-1-t72-a64', is_train=False,transform=data_transforms['test'])
        
     elif Dataset == 'CIFAR10': #See people also use .5, .5 for normalization
         train_dataset = CIFAR10_Index(data_dir,train=True,transform=data_transforms['train'],
@@ -221,7 +221,7 @@ def Prepare_DataLoaders(Network_parameters, split,input_size=224):
                                                            pin_memory=Network_parameters['pin_memory'])
                                                            for x in ['train', 'val','test']}
         # only when using MSTAR
-        dataloaders_dict['train_full'] = torch.utils.data.DataLoader(loader.MSTAR_Dataset(path=data_dir, name='eoc-2-cv', is_train=True,transform=data_transforms['test']),
+        dataloaders_dict['train_full'] = torch.utils.data.DataLoader(loader.MSTAR_Dataset(path=data_dir, name='eoc-1-t72-a64', is_train=True,transform=data_transforms['test']),
                                                            batch_size=Network_parameters['batch_size']['val'],
                                                            sampler=None,
                                                            num_workers=Network_parameters['num_workers'],
