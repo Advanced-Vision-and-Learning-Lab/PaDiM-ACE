@@ -248,7 +248,7 @@ class ACELoss(nn.Module):
         # #Compute matrix product DU^-1/2, should be
         # #Perform transpose operation along DxD dimension (follow paper)
         # DU = torch.matmul(D_mat, U_mat.T)
-        b_covs = torch.matmul(self.b_covs,torch.eye(n=self.feat_dim,m=self.feat_dim, device=self.device))
+        b_covs = self.b_covs*torch.eye(n=self.feat_dim,m=self.feat_dim, device=self.device)
         #b_covs = torch.diag_embed(self.b_covs)     # project cov vector into diagonal matrix
         b_covs_inv = torch.linalg.inv(b_covs)      # take inverse of covariance matrix
         
