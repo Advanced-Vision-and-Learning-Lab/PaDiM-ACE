@@ -211,7 +211,8 @@ class ACELoss(nn.Module):
         if single_stats:
             self.b_means = nn.init.uniform_(torch.randn(1, self.feat_dim),a=-bound,b=bound)
             # self.b_covs = torch.randn(self.feat_dim, self.feat_dim)
-            self.b_covs = torch.randn(self.feat_dim)     # vector to represent diagonal matrix
+            # self.b_covs = torch.randn(self.feat_dim)     # vector to represent diagonal matrix
+            self.b_covs = torch.randn(1.0)  # scalar value to represent variance for isotropic matrix
             
         else:
             if init_means is not None:
@@ -247,10 +248,11 @@ class ACELoss(nn.Module):
         # #Compute matrix product DU^-1/2, should be
         # #Perform transpose operation along DxD dimension (follow paper)
         # DU = torch.matmul(D_mat, U_mat.T)
+
         b_covs = torch.diag_embed(self.b_covs)     # project cov vector into diagonal matrix
         b_covs_inv = torch.linalg.inv(b_covs)      # take inverse of covariance matrix
         
-       
+        pdb.set_trace()
         #Center features (subtract background mean)
         # print(self.b_covs)
         X_centered = X-self.b_means                    
