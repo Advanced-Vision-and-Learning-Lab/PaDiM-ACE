@@ -212,7 +212,7 @@ class ACELoss(nn.Module):
             self.b_means = nn.init.uniform_(torch.randn(1, self.feat_dim),a=-bound,b=bound)
             # self.b_covs = torch.randn(self.feat_dim, self.feat_dim)
             # self.b_covs = torch.randn(self.feat_dim)     # vector to represent diagonal matrix
-            self.b_covs = torch.randn(1.0)  # scalar value to represent variance for isotropic matrix
+            self.b_covs = torch.randn(1)  # scalar value to represent variance for isotropic matrix
             
         else:
             if init_means is not None:
