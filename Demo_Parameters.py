@@ -129,7 +129,7 @@ def Parameters(args):
                    'CIFAR10': 10,
                    'CIFAR100': 100,
                    'CIFAR100_Coarse': 20,
-                   'MSTAR': 4}
+                   'MSTAR': 10}
     
     #Number of runs and/or splits for each dataset
     Splits = {'FashionMNIST': 3,
