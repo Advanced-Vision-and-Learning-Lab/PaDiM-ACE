@@ -23,7 +23,7 @@ class ACELoss(nn.Module):
         self.eps = eps
         self.signatures = sig_mat.to(self.device)
         
-    def forward(self,X, b_mean, b_covs, cov_type):
+    def forward(self,X, b_mean, b_cov, cov_type):
         """
         Args:
             X (torch tensor): batch of image embeddings for every patch in the image
@@ -32,35 +32,64 @@ class ACELoss(nn.Module):
         Returns:
             ACE_targets (torch tensor): 
         """
-        cov_mat = torch.linalg.inv(b_covs)
-        diag_mat = torch.diag_embed(torch.diagonal(cov_mat, dim1=1, dim2=2))
-        inv_diag_mat = torch.linalg.inv(diag_mat)
+        b_cov = torch.linalg.inv(b_cov)
+        # pdb.set_trace()
+
         
-        avg_variance = torch.mean(torch.diagonal(cov_mat, dim1=1,dim2=2),dim=1)  # Compute average variance
-        inv_iso_mat = avg_variance[:, None, None] * torch.eye(cov_mat.shape[1]).to(self.device)
+        # inv_diag_mat = torch.linalg.inv(diag_mat)
 
         if cov_type == "full":
-            b_covs_inv = b_covs.to(self.device)
+            b_cov = b_cov.to(self.device)
         elif cov_type == "diagonal":
-            b_covs_inv = inv_diag_mat.to(self.device)
+            # b_covs_inv = inv_diag_mat.to(self.device)
+            b_cov = torch.diag_embed(torch.diagonal(b_cov, dim1=1, dim2=2))
+
         elif cov_type == "isotropic":
-            b_covs_inv = inv_iso_mat.to(self.device)
+            # b_covs_inv = inv_iso_mat.to(self.device)
+            avg_variance = torch.mean(torch.diagonal(b_cov, dim1=1,dim2=2),dim=1)  # Compute average variance
+            b_cov = avg_variance[:, None, None] * torch.eye(b_cov.shape[1]).to(self.device)
         
-        X = X.to(self.device)
-        b_mean = b_mean.to(self.device)             
+        # Full covariance matrix
+        # Compute U (eigenvectors) and D (eigvenvalues) 
+        try:
+            U_mat, eigenvalues, _ = torch.svd(torch.einsum('pfd,pdf-> pfd',b_cov,b_cov.transpose(1,2)))
+            
+        except:
+            U_mat, eigenvalues, _ = torch.svd(torch.mm(b_cov,b_cov.t())+
+                                              (1e-5*torch.eye(b_cov.shape[0],
+                                                              device=self.device)))
+    
+        #Compute D^-1/2 power
+        D_mat = torch.diag_embed(torch.pow(eigenvalues, -1 / 2))
 
-        # Whiten dataspace
-        X_centered = (X-b_mean)  
-        X_whitened = torch.einsum("ijk,kmj->ikm",X_centered, b_covs_inv)
+        #Compute matrix product DU^-1/2, should be
+        #Perform transpose operation along DxD dimension (follow paper)
+        DU = torch.matmul(D_mat, U_mat.transpose(1,2))
 
-        # Normalize X and compute similarity
-        x_norm = F.normalize(X_whitened, dim=-1)
-        sig_norm = F.normalize(self.signatures, dim=0)
-        ACE_targets = torch.einsum("ijk,kj->ij",x_norm, sig_norm)
-
-        # Apply cross entropy
-        # ACE_targets = torch.clamp(ACE_targets, min=1e-7, max=1-1e-7)
-        # loss = -torch.log(ACE_targets)
+        X_centered = X-b_mean
+        
+        #Compute x_hat
+        # xHat = torch.matmul(DU, X_centered.T)
+        xHat = torch.einsum('pfd, bfp -> bpd', DU, X_centered)
+        sHat = torch.einsum('pfd, pf -> pd',DU, self.signatures.T)
+        
+        #Compute ACE score between features and signatures (NxC, one vs all), 
+        #score between of -1 and 1 
+        #L2 normalization done in function
+        xHat = F.normalize(xHat.T, dim=2)
+        sHat = F.normalize(sHat.T,dim=1)
+        
+        # ACE_targets = torch.mm(xHat,sHat) + torch.ones(batch_size,self.num_classes).to(self.device)
+        ACE_targets = torch.einsum('fpb, fp -> bp', xHat, sHat)
+    
+        #Uniqueness of signatures in whitened dataspace
+        #ACE scores in angular softmax
+        # labels = labels.long()
+        # numerator = torch.diagonal(ACE_targets.transpose(0, 1)[labels])
+        # excl = torch.cat([torch.cat((ACE_targets[i, :y], ACE_targets[i, y+1:])).unsqueeze(0) for i, y in enumerate(labels)], dim=0)
+        # denominator = torch.exp(numerator) + torch.sum(torch.exp(excl), dim=1)
+        # loss = (numerator - torch.log(denominator))
+        # loss = -torch.mean(loss)
         
         return ACE_targets
     

@@ -248,23 +248,29 @@ class PadimModel(nn.Module):
             transforms.Resize((256,256)),
             transforms.ToTensor(),
         ])
+        # pdb.set_trace()
+        anom_dataset = datasets.ImageFolder(root='./datasets/HRSID/train/anom', transform=transform)
+        norm_dataset = datasets.ImageFolder(root='./datasets/HRSID/train/norm', transform=transform)
 
-        dataset = datasets.ImageFolder(root='./datasets/soc/train/anom', transform=transform)
+        anom_dataset.samples.sort()
+        norm_dataset.samples.sort()
 
-        dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
-        i = 0
+        anom_dataloader = DataLoader(anom_dataset, batch_size=16, shuffle=False)
+        norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
+
         with torch.no_grad():
-            for images, labels in dataloader:
-                i = i+1
-                features = self.feature_extractor(images)
-                if i == 1:
-                    embeddings = self.generate_embedding(features)
-                else:
-                    embeddings = torch.cat((embeddings,self.generate_embedding(features)),0)
-            
-        mean_embeddings = embeddings.mean(dim=0)
+            norm_embeddings = []
+            anom_embeddings = []
+            for (anom_images, _), (norm_images, _) in zip(anom_dataloader, norm_dataloader):
+                norm_features = self.feature_extractor(norm_images)  # Extract features
+                anom_features = self.feature_extractor(anom_images)
+
+                norm_embeddings.append(self.generate_embedding(norm_features))
+                anom_embeddings.append(self.generate_embedding(anom_features))
+            norm_embeddings = torch.cat(norm_embeddings, dim=0)
+            anom_embeddings = torch.cat(anom_embeddings, dim=0)
+        mean_embeddings = torch.abs(torch.sub(torch.median(norm_embeddings,dim=0).values,torch.median(anom_embeddings,dim=0).values))
         feat_dim, h, w = mean_embeddings.shape
         signiture_matrix = mean_embeddings.reshape(feat_dim, h*w)
-        del embeddings
-        del dataloader
+        # pdb.set_trace()
         return signiture_matrix

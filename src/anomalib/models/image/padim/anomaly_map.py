@@ -94,7 +94,7 @@ class AnomalyMapGenerator(nn.Module):
         if self.loss == "lace":
             # LACE
             losses = self.reg_method(embedding,mean,inv_covariance, self.cov_type)
-            losses = losses.reshape(height*width,batch).permute(1,0)
+            # losses = losses.reshape(height*width,batch).permute(1,0)
             losses = losses.reshape(batch, 1, height, width)
             return losses
         
