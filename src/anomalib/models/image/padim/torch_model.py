@@ -248,12 +248,8 @@ class PadimModel(nn.Module):
             transforms.Resize((256,256)),
             transforms.ToTensor(),
         ])
-        # pdb.set_trace()
-        anom_dataset = datasets.ImageFolder(root='./datasets/HRSID/train/anom', transform=transform)
-        norm_dataset = datasets.ImageFolder(root='./datasets/HRSID/train/norm', transform=transform)
-
-        anom_dataset.samples.sort()
-        norm_dataset.samples.sort()
+        anom_dataset = datasets.ImageFolder(root='./datasets/SSDD/train/anom', transform=transform)
+        norm_dataset = datasets.ImageFolder(root='./datasets/SSDD/train/norm', transform=transform)
 
         anom_dataloader = DataLoader(anom_dataset, batch_size=16, shuffle=False)
         norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
@@ -265,12 +261,12 @@ class PadimModel(nn.Module):
                 norm_features = self.feature_extractor(norm_images)  # Extract features
                 anom_features = self.feature_extractor(anom_images)
 
-                norm_embeddings.append(self.generate_embedding(norm_features))
+                norm_embeddings.append(self.generate_embedding(norm_features)) # Generate Embeddings
                 anom_embeddings.append(self.generate_embedding(anom_features))
             norm_embeddings = torch.cat(norm_embeddings, dim=0)
             anom_embeddings = torch.cat(anom_embeddings, dim=0)
-        mean_embeddings = torch.abs(torch.sub(torch.median(norm_embeddings,dim=0).values,torch.median(anom_embeddings,dim=0).values))
+        mean_embeddings = torch.sub(torch.mean(anom_embeddings,dim=0),   # Subtract norm mean from anom mean
+                                    torch.mean(norm_embeddings,dim=0))
         feat_dim, h, w = mean_embeddings.shape
         signiture_matrix = mean_embeddings.reshape(feat_dim, h*w)
-        # pdb.set_trace()
         return signiture_matrix
