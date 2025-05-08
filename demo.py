@@ -1,63 +1,7 @@
-
-import numpy as np
-import torch
-import pdb
-from matplotlib import pyplot as plt
-from sklearn.metrics import average_precision_score, precision_recall_curve
-
 from anomalib.engine import Engine
 from anomalib.models import Padim, Dfm, WinClip
 from anomalib.data import Folder
-
-# ssdd = Folder(
-#     name="hrsid",
-#     root="./datasets/HRSID",
-#     mask_dir="./ground_truth",
-#     normal_dir="./train/norm",
-#     abnormal_dir="./test/anom",
-#     train_batch_size=16,
-#     eval_batch_size=16
-# )
-# ssdd.setup()
-
-# model = Padim(loss="lace")
-# engine = Engine()
-# engine.fit(model=model, datamodule=ssdd)
-# predictions = engine.predict(datamodule=ssdd)
-# pdb.set_trace()
-
-# predictions = engine.predict(datamodule=datamodule)
-# gt_masks = torch.cat([pred.gt_mask for pred in predictions])
-# pred_masks = torch.cat([pred.pred_mask for pred in predictions])
-
-# ap_score = average_precision_score(gt_labels,pred_labels)
-# print(ap_score)
-
-# precision, recall, _ = precision_recall_curve(gt_labels, pred_labels)
-# pdb.set_trace()
-# plt.plot(recall, precision)
-# plt.xlabel("Recall")
-# plt.ylabel('Precision')
-# plt.title('Precision-Recall Curve')
-# plt.savefig("precision-recall-curve.png")
-
-# test_results = engine.test(model=model,
-#                            datamodule=ssdd, 
-#                            ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
-# print(test_results)
-# print(str(engine.trainer.checkpoint_callback.best_model_path))
-
-#     predictions = engine.predict(datamodule=datamodule)
-#     gt_labels = torch.cat([pred.gt_label for pred in predictions])
-#     pred_labels = torch.cat([pred.pred_label for pred in predictions])
-
-#     test_results = engine.test(model=model,
-#                            datamodule=datamodule, 
-#                            ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
-    
-#     ap_score = average_precision_score(gt_labels,pred_labels)
-#     print("Average precision score:" + str(ap_score))
-#     print(test_results)
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
 def main(experiment=None):
     # Initialize datamodules
@@ -95,9 +39,10 @@ def main(experiment=None):
     ssdd.setup()
     
     if experiment is None or experiment == 1:
-        ########Experiment 1: Compare against different models#########
+        """Experiment 1: Compare against different models"""
         print("Comparing different models...")
         # Initialize and setup models
+        # post_processor = OneClassPostProcessor(image_sensitivity=0.6, pixel_sensitivity=0.6)
         padim_lace = Padim(loss="lace")
         padim = Padim()
         dfm = Dfm()
@@ -108,11 +53,11 @@ def main(experiment=None):
         models = {"padim_lace":padim_lace,"padim":padim,"dfm":dfm,"winclip":winclip}
 
         # List of datasets to test on
-        datamodules = [mstar,ssdd,hrsid]
+        datamodules = [ssdd]
 
-        for i in range(3):
-            for model_name, model in models.items():
-                for datamodule in datamodules:
+        for i in range(1):
+            for datamodule in datamodules:
+                for model_name, model in models.items():
                     engine = Engine()
                     engine.fit(model=model, datamodule=datamodule)
                     test_results = engine.test(model=model,
@@ -124,21 +69,36 @@ def main(experiment=None):
                     f.close()
 
     if experiment is None or experiment == 2: 
-        #######Experiment 2: Investigate different backbones#########
+        """Experiment 2: Investigate different backbones"""
         print("Testing different backbones...")
+        
         #List of backbones to test (two CNNs and two transformers)
-        backbones = ["resnet18", "convnextv2_tiny", "swinv2_tiny_window8_256", "mobilevit_xs"]
-
-        for i in range(1):
+        # backbones = ["resnet18", "convnextv2_tiny", "swinv2_tiny_window8_256", "mobilevit_xs"]
+        backbones = ["mobilevit_xs"]
+        post_processor = OneClassPostProcessor(image_sensitivity=0.6, pixel_sensitivity=0.6)
+        for i in range(2):
             for backbone in backbones:
                 if backbone == "resnet18":
-                    model = Padim(loss="lace")
+                    model = Padim(loss="lace", 
+                                  post_processor=post_processor)
                 elif backbone == "convnextv2_tiny":
-                    model = Padim(backbone=backbone, layers=["stages.0", "stages.1", "stages.2"], n_features=100, loss="lace")
+                    model = Padim(backbone=backbone, 
+                                  layers=["stages.0", "stages.1", "stages.2"], 
+                                  n_features=100, 
+                                  loss="lace", 
+                                  post_processor=post_processor)
                 elif backbone == "swinv2_tiny_window8_256":
-                    model = Padim(backbone=backbone, layers=["layers.0", "layers.1", "layers.2"], n_features=100, loss="lace")
+                    model = Padim(backbone=backbone, 
+                                  layers=["layers.0", "layers.1", "layers.2"], 
+                                  n_features=100, 
+                                  loss="lace", 
+                                  post_processor=post_processor)
                 elif backbone == "mobilevit_xs":
-                    model = Padim(backbone="mobilevit_xs", layers=["stages.0", "stages.1", "stages.2"], n_features=100, loss="lace")
+                    model = Padim(backbone="mobilevit_xs", 
+                                  layers=["stages.0", "stages.1", "stages.2"], 
+                                  n_features=100, 
+                                  loss="lace",
+                                  post_processor=post_processor)
 
                 engine = Engine()
                 engine.fit(model=model, datamodule=hrsid)
@@ -146,22 +106,23 @@ def main(experiment=None):
                                             datamodule=hrsid, 
                                             ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
                 f = open(f"padim_lace_{backbone}_results.txt","a")
-                f.write(f"Run {i+1}: {str(test_results)}\n")
+                f.write(f"Run {i+2}: {str(test_results)}\n")
                 f.write(f"model_path: {str(engine.trainer.checkpoint_callback.best_model_path)}\n")
                 f.close()
-    if experiment is None or experiment == 3:
-        ########Experiment 3: Investigate different covariance types#########
-        print("Testing different cov mat types...")
-        cov_types = ["full", "diagona", "isotropic"]
 
+    if experiment is None or experiment == 3:
+        """Experiment 3: Investigate different covariance types"""
+        print("Testing different cov mat types...")
+        cov_types = ["full", "diagonal", "isotropic"]
+        post_processor = OneClassPostProcessor(image_sensitivity=0.6, pixel_sensitivity=0.6)
         for i in range(1):
             for cov_type in cov_types:
-                model = Padim(loss="lace", cov_type=cov_type)
+                model = Padim(loss="lace", cov_type=cov_type, post_processor=post_processor)
 
                 engine = Engine()
-                engine.fit(model=model, datamodule=mstar)
+                engine.fit(model=model, datamodule=hrsid)
                 test_results = engine.test(model=model,
-                                        datamodule=mstar,
+                                        datamodule=hrsid,
                                         ckpt_path = engine.trainer.checkpoint_callback.best_model_path)
                 f = open(f"padim_lace_{cov_type}_results.txt","a")
                 f.write(f"Run {i+1}: {str(test_results)}\n")
@@ -169,30 +130,39 @@ def main(experiment=None):
                 f.close()
     
     if experiment == 4:
-        # playground to run random tests
-        datamodule = Folder(
-            name="ssdd",
-            root="./datasets/SSDD",
-            mask_dir="./ground_truth",
-            normal_dir="./train/norm",
-            abnormal_dir="./test/anom",
-            train_batch_size=16,
-            eval_batch_size=16
-        )
-        datamodule.setup()
+        """Experiment 4: Investigate isotropic aggregation"""
+        agg_types = ["mean_diagonal", "mean_full", "determinant", "trace"]
 
-        model = Padim(loss="lace")
-        # pdb.set_trace()
-        engine = Engine()
-        engine.fit(model=model, datamodule=datamodule)
-        test_results = engine.test(model=model,
-                                   datamodule=datamodule,
-                                   ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
-        print(test_results)
-        print(str(engine.trainer.checkpoint_callback.best_model_path))
+        for i in range(3):
+            post_processor = OneClassPostProcessor(image_sensitivity=0.6, pixel_sensitivity=0.6)
+            model = Padim(loss="lace", post_processor=post_processor, cov_type="isotropic")
+            engine = Engine()
+            engine.fit(model=model, datamodule=hrsid)
+            test_results = engine.test(model=model,
+                                    datamodule=hrsid,
+                                    ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
+            f = open(f"padim_lace_{agg_types[2]}_results.txt","a")
+            f.write(f"Run {i+1}: {str(test_results)}\n")
+            f.write(f"model_path: {str(engine.trainer.checkpoint_callback.best_model_path)}\n")
+            f.close()
+    
+    if experiment == 5:
+        """Experiment 5: Investigate different aggregation methods"""
+        # post_processor = OneClassPostProcessor(image_sensitivity=0.4, pixel_sensitivity=0.4)
+        for i in range(3):
+            model = Padim(loss="lace")
+            engine = Engine()
+            engine.fit(model=model, datamodule=hrsid)
+            test_results = engine.test(model=model,
+                                    datamodule=hrsid,
+                                    ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
+            f = open(f"padim_lace_sig_mat(mean difference^2)_results.txt","a")
+            f.write(f"Run {i+1}: {str(test_results)}\n")
+            f.write(f"model_path: {str(engine.trainer.checkpoint_callback.best_model_path)}\n")
+            f.close()
 
 if __name__ == "__main__":
-    main(experiment=4)
+    main(experiment=5)
     
 
 

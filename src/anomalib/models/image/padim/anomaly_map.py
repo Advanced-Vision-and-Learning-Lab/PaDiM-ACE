@@ -62,11 +62,11 @@ class AnomalyMapGenerator(nn.Module):
         ... )
     """
 
-    def __init__(self, sig_mat: torch.Tensor, loss: str, cov_type:str, sigma: int = 4) -> None:
+    def __init__(self, sig_mat: torch.Tensor, loss: str, cov_type:str, n_features:int, num_patches:int,sigma: int = 4) -> None:
         super().__init__()
-        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
-        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
-        self.reg_method = ACELoss(sig_mat=sig_mat)
+        kernel_size = (2 * int(4.0 * sigma + 0.5) + 1)
+        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1).to('cuda')
+        self.reg_method = ACELoss(sig_mat=sig_mat, feat_dim=n_features, num_patches=num_patches)
         self.loss = loss
         self.cov_type = cov_type
     @staticmethod
@@ -90,13 +90,12 @@ class AnomalyMapGenerator(nn.Module):
         embedding = embedding.reshape(batch, channel, height * width)
 
         mean, inv_covariance = stats
-        
         if self.loss == "lace":
             # LACE
             losses = self.reg_method(embedding,mean,inv_covariance, self.cov_type)
             # losses = losses.reshape(height*width,batch).permute(1,0)
-            losses = losses.reshape(batch, 1, height, width)
-            return losses
+            ACE_targets = losses.reshape(batch, 1, height, width)
+            return ACE_targets
         
         else:
             # Maholanobis distance 
@@ -196,7 +195,6 @@ class AnomalyMapGenerator(nn.Module):
         if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
             msg = f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}"
             raise ValueError(msg)
-
         embedding: torch.Tensor = kwargs["embedding"]
         mean: torch.Tensor = kwargs["mean"]
         inv_covariance: torch.Tensor = kwargs["inv_covariance"]

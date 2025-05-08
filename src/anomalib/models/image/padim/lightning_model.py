@@ -45,6 +45,7 @@ import logging
 import pdb
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torch.nn import functional as F
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -157,10 +158,10 @@ class Padim(MemoryBankMixin, AnomalibModule):
             torch.Tensor: Dummy loss tensor for Lightning compatibility
         """
         del args, kwargs  # These variables are not used.
-
-        embedding = self.model(batch.image)
+        image_path = batch.image_path[0].rsplit('norm/', 1)[0]+"anom"
+        embedding = self.model(batch.image, image_path)
         self.embeddings.append(embedding)
-
+        
         # Return a dummy loss tensor
         return torch.tensor(0.0, requires_grad=True, device=self.device)
 
@@ -189,7 +190,7 @@ class Padim(MemoryBankMixin, AnomalibModule):
         """
         del args, kwargs  # These variables are not used.
 
-        predictions = self.model(batch.image)
+        predictions = self.model(batch.image, None)
         return batch.update(**predictions._asdict())
 
     @property

@@ -151,15 +151,15 @@ class PadimModel(nn.Module):
         self.idx: torch.Tensor
         self.loss = loss
         self.cov_type = cov_type
-        self.anomaly_map_generator = AnomalyMapGenerator(sig_mat=self.init_signitures(),loss=self.loss,cov_type=self.cov_type)
-
+        self.sig_mat = None
         self.gaussian = MultiVariateGaussian()
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
+    def forward(self, input_tensor: torch.Tensor, anom_path: str | None) -> torch.Tensor | InferenceBatch:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
             input_tensor (torch.Tensor): Image batch with shape (N, C, H, W)
+            anom_path (str): Path to the anomalous training images 
 
         Returns:
             torch.Tensor | InferenceBatch: If training, returns the embeddings.
@@ -178,6 +178,11 @@ class PadimModel(nn.Module):
             torch.Size([32, 256, 14, 14])]
         """
         output_size = input_tensor.shape[-2:]
+        if self.sig_mat is None and self.loss == "lace":
+            H, W = output_size
+            self.sig_mat = self.init_signitures(anom_path)
+            self.anomaly_map_generator = AnomalyMapGenerator(sig_mat=self.sig_mat,loss=self.loss,cov_type=self.cov_type, n_features=self.n_features,num_patches=int((H/4)*(W/4)))
+        
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -189,6 +194,7 @@ class PadimModel(nn.Module):
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
+            
             return embeddings
 
         anomaly_map = self.anomaly_map_generator(
@@ -197,7 +203,7 @@ class PadimModel(nn.Module):
             inv_covariance=self.gaussian.inv_covariance,
             image_size=output_size
         )
-        
+
         pred_score = torch.amax(anomaly_map, dim=(-2, -1))
         return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
@@ -234,7 +240,7 @@ class PadimModel(nn.Module):
         idx = self.idx.to(embeddings.device)
         return torch.index_select(embeddings, 1, idx)
     
-    def init_signitures(self):
+    def init_signitures(self, anom_path: str):
         """Create target signiture matrix for LACE
 
         This method takes all the anomalous training images, extracts their features 
@@ -248,25 +254,43 @@ class PadimModel(nn.Module):
             transforms.Resize((256,256)),
             transforms.ToTensor(),
         ])
-        anom_dataset = datasets.ImageFolder(root='./datasets/SSDD/train/anom', transform=transform)
-        norm_dataset = datasets.ImageFolder(root='./datasets/SSDD/train/norm', transform=transform)
+        norm_path = anom_path.rsplit("/anom", 1)[0]+"/norm"
+        anom_dataset = datasets.ImageFolder(root= anom_path, transform=transform)
+        # norm_dataset = datasets.ImageFolder(root= norm_path, transform=transform)
 
         anom_dataloader = DataLoader(anom_dataset, batch_size=16, shuffle=False)
-        norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
+        # norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
 
         with torch.no_grad():
             norm_embeddings = []
             anom_embeddings = []
-            for (anom_images, _), (norm_images, _) in zip(anom_dataloader, norm_dataloader):
-                norm_features = self.feature_extractor(norm_images)  # Extract features
-                anom_features = self.feature_extractor(anom_images)
-
-                norm_embeddings.append(self.generate_embedding(norm_features)) # Generate Embeddings
-                anom_embeddings.append(self.generate_embedding(anom_features))
-            norm_embeddings = torch.cat(norm_embeddings, dim=0)
+            
+            for _, (images, labels) in enumerate(anom_dataloader):
+                anom_features = self.feature_extractor(images.to('cuda'))           # Extract features
+                anom_embeddings.append(self.generate_embedding(anom_features))      # Generate Embeddings
             anom_embeddings = torch.cat(anom_embeddings, dim=0)
-        mean_embeddings = torch.sub(torch.mean(anom_embeddings,dim=0),   # Subtract norm mean from anom mean
-                                    torch.mean(norm_embeddings,dim=0))
-        feat_dim, h, w = mean_embeddings.shape
+
+            # for _, (images, labels) in enumerate(norm_dataloader):
+            #     norm_features = self.feature_extractor(images.to('cuda'))               # Extract features
+            #     norm_embeddings.append(self.generate_embedding(norm_features))          # Generate Embeddings
+            # norm_embeddings = torch.cat(norm_embeddings, dim=0)
+            
+
+        # mean_norm_embeddings = torch.mean(norm_embeddings.permute(0,2,3,1), dim=0)  # compute the mean
+        mean_anom_embeddings = torch.mean(anom_embeddings.permute(0,2,3,1), dim=0)
+
+        # difference between mean anom and mean norm
+        # mean_embeddings = mean_anom_embeddings - mean_norm_embeddings
+
+        # mean anom 
+        mean_embeddings = mean_anom_embeddings
+
+        # median anom
+        # mean_embeddings, _ = torch.median(anom_embeddings.permute(0,2,3,1), dim=0)
+
+        # difference^2 -l2 norm
+        # mean_embeddings = mean_embeddings**2
+
+        h, w, feat_dim = mean_embeddings.shape
         signiture_matrix = mean_embeddings.reshape(feat_dim, h*w)
         return signiture_matrix
