@@ -152,6 +152,7 @@ class PadimModel(nn.Module):
         self.loss = loss
         self.cov_type = cov_type
         self.sig_mat = None
+        # self.anomaly_map_generator = AnomalyMapGenerator(sig_mat=self.sig_mat,loss=self.loss,cov_type=self.cov_type)
         self.gaussian = MultiVariateGaussian()
 
     def forward(self, input_tensor: torch.Tensor, anom_path: str | None) -> torch.Tensor | InferenceBatch:
@@ -194,8 +195,14 @@ class PadimModel(nn.Module):
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
-            
-            return embeddings
+            pred_anomaly_map = self.anomaly_map_generator(
+                embedding=embeddings,
+                mean=self.gaussian.mean,
+                inv_covariance=self.gaussian.inv_covariance,
+                image_size=output_size
+            )
+            pred_score = torch.amax(pred_anomaly_map, dim=(-2, -1))
+            return embeddings, InferenceBatch(pred_score=pred_score, anomaly_map=pred_anomaly_map)
 
         anomaly_map = self.anomaly_map_generator(
             embedding=embeddings,
@@ -256,10 +263,10 @@ class PadimModel(nn.Module):
         ])
         norm_path = anom_path.rsplit("/anom", 1)[0]+"/norm"
         anom_dataset = datasets.ImageFolder(root= anom_path, transform=transform)
-        # norm_dataset = datasets.ImageFolder(root= norm_path, transform=transform)
+        norm_dataset = datasets.ImageFolder(root= norm_path, transform=transform)
 
         anom_dataloader = DataLoader(anom_dataset, batch_size=16, shuffle=False)
-        # norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
+        norm_dataloader = DataLoader(norm_dataset, batch_size=16, shuffle=False)
 
         with torch.no_grad():
             norm_embeddings = []
@@ -281,6 +288,7 @@ class PadimModel(nn.Module):
 
         # difference between mean anom and mean norm
         # mean_embeddings = mean_anom_embeddings - mean_norm_embeddings
+        # pdb.set_trace()
 
         # mean anom 
         mean_embeddings = mean_anom_embeddings

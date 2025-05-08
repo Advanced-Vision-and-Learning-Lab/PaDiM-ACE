@@ -159,8 +159,10 @@ class Padim(MemoryBankMixin, AnomalibModule):
         """
         del args, kwargs  # These variables are not used.
         image_path = batch.image_path[0].rsplit('norm/', 1)[0]+"anom"
-        embedding = self.model(batch.image, image_path)
+        embedding, predictions = self.model(batch.image, image_path)
         self.embeddings.append(embedding)
+        image_loss = F.binary_cross_entropy(predictions.pred_label, batch.gt_label)
+        patch_loss = F.binary_cross_entropy(predictions.pred_mask, batch.gt_mask)
         
         # Return a dummy loss tensor
         return torch.tensor(0.0, requires_grad=True, device=self.device)
