@@ -2,7 +2,7 @@
 
 _Angelina Ibarra and Joshua Peeples_
 
-![Model Diagram](model_diagram.png)
+![Model Diagram](model_diagram.jpg)
 
 [`arXiv`](https://arxiv.org/abs/2504.08049)
 
